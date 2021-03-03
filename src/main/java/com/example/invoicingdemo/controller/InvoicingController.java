@@ -11,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,14 +54,30 @@ public class InvoicingController {
 
     //List invoices
     @GetMapping("/invoices")
-    public ResponseEntity<Items> listInvoices() {
+    public ResponseEntity<Items> listInvoices(@RequestParam Optional<Integer> page,
+                                              @RequestParam Optional<Integer> page_size,
+                                              @RequestParam Optional<Boolean> total_required,
+                                              @RequestParam Optional<String> fields) {
+
         final String url = "https://api-m.sandbox.paypal.com/v2/invoicing/invoices";
         HttpHeaders headers = new HttpHeaders();
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+
+        //Check all the query parameters
+        if(page.isPresent())
+            builder.queryParam("page", page.get());
+        if(page_size.isPresent())
+            builder.queryParam("page_size", page_size.get());
+        if(total_required.isPresent())
+            builder.queryParam("total_required", total_required.get());
+        if(fields.isPresent())
+            builder.queryParam("fields", fields.get());
+
         headers.set("Authorization", "BEARER " + authorizationToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity entity = new HttpEntity(headers);
 
-        ResponseEntity<Items> response = restTemplate.exchange(url, HttpMethod.GET, entity, Items.class);
+        ResponseEntity<Items> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, Items.class);
 
         return new ResponseEntity<>(response.getBody(), response.getStatusCode());
     }
@@ -144,8 +161,20 @@ public class InvoicingController {
 
     //Fully update invoice
     @PutMapping("invoice/{id}")
-    public ResponseEntity updateInvoice(@PathVariable String id, @RequestBody @Nullable InvoiceDTO newObj) {
+    public ResponseEntity updateInvoice(@PathVariable String id,
+                                        @RequestBody @Nullable InvoiceDTO newObj,
+                                        @RequestParam Optional<Boolean> send_to_recipient,
+                                        @RequestParam Optional<Boolean> send_to_invoicer) {
         final String url = "https://api-m.sandbox.paypal.com/v2/invoicing/invoices/" + id;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+
+        //Check all the query parameters
+        if(send_to_recipient.isPresent())
+            builder.queryParam("page", send_to_recipient.get());
+        if(send_to_invoicer.isPresent())
+            builder.queryParam("page_size", send_to_invoicer.get());
+
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "BEARER " + authorizationToken);
         headers.set("Content-Type", "application/json");
@@ -153,7 +182,7 @@ public class InvoicingController {
         HttpEntity<InvoiceDTO> entity = new HttpEntity(newObj, headers);
 
         try {
-            ResponseEntity<Link> response = restTemplate.exchange(url, HttpMethod.PUT, entity, Link.class);
+            ResponseEntity<Link> response = restTemplate.exchange(builder.toUriString(), HttpMethod.PUT, entity, Link.class);
             return new ResponseEntity<>(response.getBody(), response.getStatusCode());
         } catch (HttpClientErrorException e) {
             String response = e.getResponseBodyAsString();
