@@ -227,6 +227,11 @@ public class InvoicingController {
         }
     }
 
-    //Generate QR code
+//    //Create QR code
+//    @PostMapping("/invoice/{id}/generate-qr-code")
+//    public ResponseEntity generateQRCode(@PathVariable String id) {
+//
+//    }
 
+    
 }
