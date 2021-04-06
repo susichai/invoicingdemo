@@ -227,6 +227,6 @@ public class InvoicingController {
         }
     }
 
-    //Generate QR code
+
 
 }
